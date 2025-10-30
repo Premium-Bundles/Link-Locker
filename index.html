@@ -1,320 +1,611 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Link Locker — Simple</title>
-  <style>
-    :root{
-      --bg: #f6faf8;
-      --card: #ffffff;
-      --muted: #9aa5a3;
-      --accent: #2f3b44;
-      --pill: 18px;
-      --shadow: 0 6px 18px rgba(45,60,70,0.06);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    html,body{height:100%;margin:0;}
-    body{
-      display:flex;align-items:center;justify-content:center;min-height:100vh;
-      background:linear-gradient(180deg,#f2f8fb 0%, #f6faf8 100%);
-      color:var(--accent);
-    }
-    .wrap{width:980px;max-width:94%;}
-
-    h1{font-weight:600;margin:0 0 8px;font-size:20px}
-    p.lead{margin:0 0 20px;color:var(--muted)}
-
-    .card{background:var(--card);border-radius:14px;padding:28px;box-shadow:var(--shadow);}
-
-    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
-    @media (max-width:900px){.grid{grid-template-columns:1fr;}}
-
-    label{display:block;font-size:13px;margin-bottom:8px;color:var(--muted)}
-    .input{display:flex;align-items:center;background:#fbfeff;border:1px solid rgba(20,30,40,0.03);padding:12px;border-radius:12px}
-    .input input,.input textarea{border:0;background:transparent;outline:none;font-size:15px;width:100%}
-    .input.placeholder-style input::placeholder{color:var(--muted);letter-spacing:2px}
-    textarea{min-height:90px;resize:vertical;padding-top:8px}
-
-    .small{font-size:13px;color:var(--muted);margin-top:8px}
-
-    .right-card{padding:18px;border-radius:12px;background:linear-gradient(180deg,#ffffff,#fbfdff);display:flex;flex-direction:column;gap:12px}
-    .preview{background:#fbfeff;border-radius:12px;padding:12px;border:1px solid rgba(20,30,40,0.03)}
-
-    .row{display:flex;gap:12px;align-items:center}
-    .btn{background:var(--accent);color:white;padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
-    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(20,30,40,0.06)}
-
-    .generated{word-break:break-all;background:#f4fbf9;padding:12px;border-radius:10px;border:1px dashed rgba(20,30,40,0.04);font-size:13px}
-
-    /* password box with arrow */
-    .pw-wrap{display:flex;align-items:center}
-    .pw-input{flex:1;border-radius:8px;padding:14px 16px;background:#fff;border:1px solid rgba(20,30,40,0.06);display:flex;align-items:center}
-    .pw-input input{border:0;outline:none;font-size:15px;flex:1}
-    .arrow-btn{width:52px;height:44px;margin-left:10px;border-radius:10px;background:#232b33;color:white;border:0;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
-
-    footer{margin-top:16px;font-size:13px;color:var(--muted)}
-    .meta{font-size:13px;color:var(--muted);}
-
-    /* ---------- UNLOCK UI ---------- */
-    #unlockArea{display:none;text-align:center;max-width:460px;margin:40px auto;padding:32px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);}
-    #unlockArea .title{font-size:24px;font-weight:600;margin-bottom:8px;}
-    #unlockArea .desc{margin-top:8px;color:var(--muted);font-size:14px;}
-    #unlockArea .hint{margin-top:12px;color:var(--muted);font-size:13px;}
-    #unlockMsg{margin-top:8px;color:#b40000;font-size:13px;display:none;}
-
-    @media (max-width:600px){
-      .pw-input{padding:16px;}
-      .arrow-btn{width:56px;height:56px;}
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-
-    <!-- Header (visible only in generator mode) -->
-    <div id="pageHeader" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div>
-        <h1>Link Locker — create a locked link</h1>
-        <p class="lead">Simple client-side locking. A password is required to open the destination. The generated link contains the encrypted payload — no server required.</p>
-      </div>
-      <div class="meta">Soft pastel UI • Round edges • Client-side only</div>
-    </div>
-
-    <!-- Generator card -->
-    <div id="generatorCard" class="card">
-      <div class="grid">
-        <div>
-          <label>Destination URL</label>
-          <div class="input">
-            <input id="dest" type="url" placeholder="https://example.com/your-target" required />
-          </div>
-
-          <div style="height:12px"></div>
-
-          <label>Title</label>
-          <div class="input placeholder-style">
-            <input id="title" type="text" placeholder="Title (shown on locked page)" />
-          </div>
-
-          <div style="height:12px"></div>
-
-          <label>Description (optional)</label>
-          <div class="input">
-            <textarea id="desc" placeholder="Short note about the link"></textarea>
-          </div>
-
-          <div style="height:12px"></div>
-
-          <label>Password hint (shown to users)</label>
-          <div class="input">
-            <input id="hint" type="text" placeholder="eg. your favourite pet's name" />
-          </div>
-
-          <div style="height:12px"></div>
-
-          <label>Set password</label>
-          <div class="pw-wrap">
-            <div class="pw-input">
-              <input id="password" type="password" placeholder="password" />
-            </div>
-            <button id="create" class="arrow-btn" title="Create locked link">→</button>
-          </div>
-
-          <div class="small">The link generated will contain the payload as a URL fragment. Anyone with the full link can attempt to unlock it.</div>
-        </div>
-
-        <div>
-          <div class="right-card">
-            <div>
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>Preview</strong>
-                <button id="reset" class="btn ghost">Reset</button>
-              </div>
-              <div style="height:8px"></div>
-              <div class="preview">
-                <div id="pv-title" style="font-weight:600">Title will appear here</div>
-                <div id="pv-desc" style="margin-top:6px;color:var(--muted)">Description preview</div>
-                <div style="height:8px"></div>
-                <div id="pv-hint" style="font-size:13px;color:var(--muted)">Hint will appear here</div>
-              </div>
-            </div>
-
-            <div>
-              <strong>Generated link</strong>
-              <div style="height:8px"></div>
-              <div id="generated" class="generated">Not created yet.</div>
-              <div style="height:10px"></div>
-              <div style="display:flex;gap:10px">
-                <button id="copy" class="btn" disabled>Copy</button>
-                <button id="open" class="btn ghost" disabled>Open in new tab</button>
-              </div>
-            </div>
-
-            <footer>Note: This is a client-side locker. For critical secrets, use a server-side encrypted store.</footer>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Unlock UI (hidden by default) -->
-    <div id="unlockArea">
-      <div class="title" id="lockedTitle">Unlock Your Link</div>
-      <div class="desc" id="lockedDesc"></div>
-      <div class="hint" id="lockedHint"></div>
-
-      <div style="height:20px"></div>
-
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="pw-input" style="flex:1">
-          <input id="unlockPassword" type="password" placeholder="password" />
-        </div>
-        <button id="unlockBtn" class="arrow-btn">→</button>
-      </div>
-
-      <div id="unlockMsg"></div>
-    </div>
-
-  </div>
-
-  <script>
-    // ---------- Helpers ----------
-    const $ = s => document.querySelector(s);
-
-    function utf8_to_b64(str){return btoa(unescape(encodeURIComponent(str)));}
-    function b64_to_utf8(str){return decodeURIComponent(escape(atob(str)));}
-
-    async function sha256hex(msg){
-      const enc = new TextEncoder();
-      const data = enc.encode(msg);
-      const hash = await crypto.subtle.digest('SHA-256', data);
-      return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }
-
-    function randHex(len=12){
-      const arr = new Uint8Array(len);
-      crypto.getRandomValues(arr);
-      return Array.from(arr).map(n=>n.toString(16).padStart(2,'0')).join('');
-    }
-
-    // ---------- Preview updates ----------
-    ['#title','#desc','#hint'].forEach(sel=>{
-      const el = $(sel);
-      if(el) el.addEventListener('input', ()=>{
-        $('#pv-title').textContent = $('#title').value || 'Title will appear here';
-        $('#pv-desc').textContent   = $('#desc').value  || 'Description preview';
-        $('#pv-hint').textContent   = $('#hint').value ? 'Hint: ' + $('#hint').value : 'Hint will appear here';
-      });
-    });
-
-    // ---------- Generate locked link ----------
-    async function createLockedLink(){
-      const dest = $('#dest').value.trim();
-      const title = $('#title').value.trim();
-      const desc = $('#desc').value.trim();
-      const hint = $('#hint').value.trim();
-      const password = $('#password').value;
-
-      if(!dest || !password){
-        alert('Please provide a destination URL and a password.');
-        return;
-      }
-
-      try{
-        const salt = randHex(12);
-        const hashed = await sha256hex(password + salt);
-        const payload = {v:1, dest, title, desc, hint, salt, hashed};
-        const b64 = utf8_to_b64(JSON.stringify(payload));
-        const link = location.href.split('#')[0] + '#lock=' + b64;
-
-        $('#generated').textContent = link;
-        $('#copy').disabled = false;
-        $('#open').disabled = false;
-      }catch(e){
-        console.error(e);
-        alert('Failed to generate link');
-      }
-    }
-
-    $('#create')?.addEventListener('click', e=>{e.preventDefault(); createLockedLink();});
-    $('#password')?.addEventListener('keydown', e=>{ if(e.key==='Enter') createLockedLink(); });
-
-    // ---------- Copy / Open ----------
-    $('#copy')?.addEventListener('click', async ()=>{
-      const txt = $('#generated').textContent;
-      await navigator.clipboard.writeText(txt);
-      const btn = $('#copy');
-      btn.textContent = 'Copied';
-      setTimeout(()=>btn.textContent='Copy',1200);
-    });
-
-    $('#open')?.addEventListener('click', ()=>{
-      window.open($('#generated').textContent,'_blank');
-    });
-
-    // ---------- Reset ----------
-    $('#reset')?.addEventListener('click', ()=>{
-      $('#dest').value = $('#title').value = $('#desc').value = $('#hint').value = $('#password').value = '';
-      $('#generated').textContent = 'Not created yet.';
-      $('#copy').disabled = $('#open').disabled = true;
-      $('#pv-title').textContent = 'Title will appear here';
-      $('#pv-desc').textContent = 'Description preview';
-      $('#pv-hint').textContent = 'Hint will appear here';
-    });
-
-    // ---------- Unlock logic ----------
-    async function initUnlock(){
-      const hash = location.hash;
-      if(!hash.startsWith('#lock=')) return false;
-
-      const b64 = hash.slice(6);
-      let payload;
-      try{ payload = JSON.parse(b64_to_utf8(b64)); }
-      catch(e){ alert('Invalid or corrupted link.'); return false; }
-
-      // Hide everything that belongs to the generator
-      $('#pageHeader').style.display = 'none';
-      $('#generatorCard').style.display = 'none';
-
-      // Show clean unlock UI
-      const unlock = $('#unlockArea');
-      unlock.style.display = 'block';
-
-      $('#lockedTitle').textContent = payload.title || 'Unlock Your Link';
-      $('#lockedDesc').textContent  = payload.desc  || '';
-      $('#lockedHint').textContent  = payload.hint ? 'Hint: ' + payload.hint : '';
-
-      // Focus password field
-      $('#unlockPassword').focus();
-
-      async function doUnlock(){
-        const entered = $('#unlockPassword').value;
-        const computed = await sha256hex(entered + payload.salt);
-        if(computed === payload.hashed){
-          window.location.href = payload.dest;
-        }else{
-          const msg = $('#unlockMsg');
-          msg.textContent = 'Incorrect password. Try again.';
-          msg.style.display = 'block';
-          setTimeout(()=>msg.style.display='none',3000);
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="Lock-key.png" type="image/favicon">
+    <title>Link Locker — Protect Your Link</title>
+    <style>
+        :root {
+            --bg: #f6faf8;
+            --card: #ffffff;
+            --muted: #9aa5a3;
+            --accent: #2f3b44;
+            --pill: 18px;
+            --shadow: 0 6px 18px rgba(45, 60, 70, 0.06);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
         }
-      }
 
-      // Remove any previous listeners (prevents duplicates when page is re-used)
-      $('#unlockBtn').replaceWith($('#unlockBtn').cloneNode(true));
-      $('#unlockBtn').addEventListener('click', doUnlock);
-      $('#unlockPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') doUnlock(); });
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
 
-      return true;
-    }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #f2f8fb 0%, #f6faf8 100%);
+            color: var(--accent);
+        }
 
-    // ---------- Page init ----------
-    (function(){
-      if(!initUnlock()){
-        // Normal generator mode – make sure unlock area stays hidden
-        $('#unlockArea').style.display = 'none';
-      }
-    })();
-  </script>
+        .wrap {
+            width: 980px;
+            max-width: 94%;
+        }
+
+        h1 {
+            font-weight: 600;
+            margin: 0 0 8px;
+            margin-top: -30px;
+            margin-bottom: 10px;
+            font-size: 20px
+        }
+
+        p.lead {
+            margin: 0 -0 60px;
+            color: var(--muted)
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 18px
+        }
+
+        @media (max-width:900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: var(--muted)
+        }
+
+        .input {
+            display: flex;
+            align-items: center;
+            background: #fbfeff;
+            border: 1px solid rgba(20, 30, 40, 0.03);
+            padding: 12px;
+            border-radius: 12px;
+            position: relative
+        }
+
+        .input input,
+        .input textarea {
+            border: 0;
+            background: transparent;
+            outline: none;
+            font-size: 15px;
+            width: 100%
+        }
+
+        .input.placeholder-style input::placeholder {
+            color: var(--muted);
+            letter-spacing: 2px
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+            padding-top: 8px
+        }
+
+        .small {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 8px
+        }
+
+        .right-card {
+            padding: 18px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff, #fbfdff);
+            display: flex;
+            flex-direction: column;
+            gap: 12px
+        }
+
+        .preview {
+            background: #fbfeff;
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid rgba(20, 30, 40, 0.03)
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center
+        }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 0;
+            cursor: pointer;
+            font-weight: 600
+        }
+
+        .btn.ghost {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid rgba(20, 30, 40, 0.06)
+        }
+
+        .generated {
+            word-break: break-all;
+            background: #f4fbf9;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px dashed rgba(20, 30, 40, 0.04);
+            font-size: 13px
+        }
+
+        /* password box with eye + arrow */
+        .pw-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .pw-input {
+            flex: 1;
+            border-radius: 8px;
+            padding: 14px 16px;
+            background: #fff;
+            border: 1px solid rgba(20, 30, 40, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .pw-input input {
+            border: 0;
+            outline: none;
+            font-size: 15px;
+            flex: 1
+        }
+
+        .eye-btn {
+            background: transparent !important;
+            border: none !important;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .eye-btn img {
+            width: 22px;
+            height: 22px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .eye-btn:hover img {
+            opacity: 1;
+        }
+
+        .arrow-btn {
+            width: 52px;
+            height: 44px;
+            border-radius: 10px;
+            background: #232b33;
+            color: white;
+            border: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer
+        }
+
+        .arrow-btn img {
+            width: 28px;
+            height: 28px
+        }
+
+        footer {
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        .meta {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* ---------- UNLOCK UI ---------- */
+        #unlockArea {
+            display: none;
+            text-align: center;
+            max-width: 460px;
+            margin: 40px auto;
+            padding: 32px;
+            background: var(--card);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+        }
+
+        #unlockArea .title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        #unlockArea .desc {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        #unlockArea .hint {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        #unlockMsg {
+            margin-top: 8px;
+            color: #b40000;
+            font-size: 13px;
+            display: none;
+        }
+
+        /* Center generator card perfectly */
+        #generatorCard {
+            margin-top: -40px;
+        }
+
+        @media (max-width:600px) {
+            .pw-input {
+                padding: 16px;
+            }
+
+            .arrow-btn {
+                width: 56px;
+                height: 56px;
+            }
+
+            .pw-wrap {
+                gap: 8px;
+            }
+
+            .eye-btn img {
+                width: 22px;
+                height: 22px
+            }
+
+            .arrow-btn img {
+                width: 32px;
+                height: 32px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+
+        <!-- Header (visible only in generator mode) -->
+        <div id="pageHeader" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div>
+                <h1>Link Locker — Protect your link with locked link</h1>
+                <p class="lead">Add a password to your link and keep it private. The generated link safely contains
+                    encrypted details — processed entirely in your browser, with no servers or data collection involved.
+                </p>
+            </div>
+        </div>
+
+        <!-- Generator card -->
+        <div id="generatorCard" class="card">
+            <div class="grid">
+                <div>
+                    <label>Destination URL</label>
+                    <div class="input">
+                        <input id="dest" type="url" placeholder="https://example.com/your-target" required />
+                    </div>
+
+                    <div style="height:12px"></div>
+
+                    <label>Title</label>
+                    <div class="input placeholder-style">
+                        <input id="title" type="text" placeholder="Title (shown on locked page)" />
+                    </div>
+
+                    <div style="height:12px"></div>
+
+                    <label>Description (optional)</label>
+                    <div class="input">
+                        <textarea id="desc" placeholder="Short note about the link"></textarea>
+                    </div>
+
+                    <div style="height:12px"></div>
+
+                    <label>Password hint (shown to users)</label>
+                    <div class="input">
+                        <input id="hint" type="text" placeholder="eg. your favourite pet's name" />
+                    </div>
+
+                    <div style="height:12px"></div>
+
+                    <label>Set password</label>
+                    <div class="pw-wrap">
+                        <div class="pw-input">
+                            <input id="password" type="password" placeholder="password" />
+                            <button type="button" class="eye-btn" id="togglePass">
+                                <img src="https://img.icons8.com/material-rounded/24/visible.png" alt="visible">
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="height:8px"></div>
+
+                    <label>Confirm password</label>
+                    <div class="pw-wrap">
+                        <div class="pw-input">
+                            <input id="confirmPassword" type="password" placeholder="confirm password" />
+                            <button type="button" class="eye-btn" id="toggleConfirm">
+                                <img src="https://img.icons8.com/material-rounded/24/visible.png" alt="visible">
+                            </button>
+                        </div>
+                        <button id="create" class="arrow-btn" title="Create locked link">
+                            <img src="arrow-right.png" alt="arrow-right">
+                        </button>
+                    </div>
+
+                    <div id="passError" style="color:#b40000;font-size:13px;margin-top:6px;display:none">
+                        Passwords do not match.
+                    </div>
+
+                </div>
+
+                <div>
+                    <div class="right-card">
+                        <div>
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <strong>Preview</strong>
+                                <button id="reset" class="btn ghost">Reset</button>
+                            </div>
+                            <div style="height:8px"></div>
+                            <div class="preview">
+                                <div id="pv-title" style="font-weight:600">Title will appear here</div>
+                                <div id="pv-desc" style="margin-top:6px;color:var(--muted)">Description preview</div>
+                                <div style="height:8px"></div>
+                                <div id="pv-hint" style="font-size:13px;color:var(--muted)">Hint will appear here</div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <strong>Generated link</strong>
+                            <div style="height:8px"></div>
+                            <div id="generated" class="generated">Not created yet.</div>
+                            <div style="height:10px"></div>
+                            <div style="display:flex;gap:10px">
+                                <button id="copy" class="btn" disabled>Copy</button>
+                                <button id="open" class="btn ghost" disabled>Open in new tab</button>
+                            </div>
+                        </div>
+
+                        <footer>Note: This is a client-side locker. For critical secrets, use a server-side encrypted
+                            store.</footer>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unlock UI (hidden by default) -->
+        <div id="unlockArea">
+            <div class="title" id="lockedTitle">Unlock Your Link</div>
+            <div class="desc" id="lockedDesc"></div>
+            <div class="hint" id="lockedHint"></div>
+
+            <div style="height:20px"></div>
+
+            <div style="display:flex;align-items:center;gap:10px">
+                <div class="pw-input" style="flex:1">
+                    <input id="unlockPassword" type="password" placeholder="password" />
+                    <button type="button" class="eye-btn" id="toggleUnlockPass">
+                        <img src="https://img.icons8.com/material-rounded/24/visible.png" alt="visible">
+                    </button>
+                </div>
+                <button id="unlockBtn" class="arrow-btn">
+                    <img src="arrow-right.png" alt="arrow-right">
+                </button>
+            </div>
+
+            <div id="unlockMsg"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // ---------- Helpers ----------
+        const $ = s => document.querySelector(s);
+
+        function utf8_to_b64(str) { return btoa(unescape(encodeURIComponent(str))); }
+        function b64_to_utf8(str) { return decodeURIComponent(escape(atob(str))); }
+
+        async function sha256hex(msg) {
+            const enc = new TextEncoder();
+            const data = enc.encode(msg);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function randHex(len = 12) {
+            const arr = new Uint8Array(len);
+            crypto.getRandomValues(arr);
+            return Array.from(arr).map(n => n.toString(16).padStart(2, '0')).join('');
+        }
+
+        // ---------- Eye Toggle ----------
+        function setupEyeToggle(inputId, btnId) {
+            const input = $(inputId);
+            const btn = $(btnId);
+            const openImg = 'https://img.icons8.com/material-rounded/24/visible.png';
+            const closedImg = 'https://img.icons8.com/material/24/closed-eye.png';
+            btn.querySelector('img').src = openImg;
+            btn.addEventListener('click', () => {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    btn.querySelector('img').src = closedImg;
+                } else {
+                    input.type = 'password';
+                    btn.querySelector('img').src = openImg;
+                }
+            });
+        }
+        setupEyeToggle('#password', '#togglePass');
+        setupEyeToggle('#confirmPassword', '#toggleConfirm');
+        setupEyeToggle('#unlockPassword', '#toggleUnlockPass');
+
+        // ---------- Preview updates ----------
+        ['#title', '#desc', '#hint'].forEach(sel => {
+            const el = $(sel);
+            if (el) el.addEventListener('input', () => {
+                $('#pv-title').textContent = $('#title').value || 'Title will appear here';
+                $('#pv-desc').textContent = $('#desc').value || 'Description preview';
+                $('#pv-hint').textContent = $('#hint').value ? 'Hint: ' + $('#hint').value : 'Hint will appear here';
+            });
+        });
+
+        // ---------- Generate locked link ----------
+        async function createLockedLink() {
+            const dest = $('#dest').value.trim();
+            const title = $('#title').value.trim();
+            const desc = $('#desc').value.trim();
+            const hint = $('#hint').value.trim();
+            const password = $('#password').value;
+            const confirm = $('#confirmPassword').value;
+
+            if (!dest || !password) {
+                alert('Please provide a destination URL and a password.');
+                return;
+            }
+            if (password !== confirm) {
+                $('#passError').style.display = 'block';
+                return;
+            }
+            $('#passError').style.display = 'none';
+
+            try {
+                const salt = randHex(12);
+                const hashed = await sha256hex(password + salt);
+                const payload = { v: 1, dest, title, desc, hint, salt, hashed };
+                const b64 = utf8_to_b64(JSON.stringify(payload));
+                const link = location.href.split('#')[0] + '#lock=' + b64;
+
+                $('#generated').textContent = link;
+                $('#copy').disabled = false;
+                $('#open').disabled = false;
+            } catch (e) {
+                console.error(e);
+                alert('Failed to generate link');
+            }
+        }
+
+        $('#create')?.addEventListener('click', e => { e.preventDefault(); createLockedLink(); });
+        $('#confirmPassword')?.addEventListener('keydown', e => { if (e.key === 'Enter') createLockedLink(); });
+
+        // ---------- Copy / Open ----------
+        $('#copy')?.addEventListener('click', async () => {
+            const txt = $('#generated').textContent;
+            await navigator.clipboard.writeText(txt);
+            const btn = $('#copy');
+            btn.textContent = 'Copied';
+            setTimeout(() => btn.textContent = 'Copy', 1200);
+        });
+
+        $('#open')?.addEventListener('click', () => {
+            window.open($('#generated').textContent, '_blank');
+        });
+
+        // ---------- Reset ----------
+        $('#reset')?.addEventListener('click', () => {
+            $('#dest').value = $('#title').value = $('#desc').value = $('#hint').value = $('#password').value = $('#confirmPassword').value = '';
+            $('#generated').textContent = 'Not created yet.';
+            $('#copy').disabled = $('#open').disabled = true;
+            $('#passError').style.display = 'none';
+            $('#pv-title').textContent = 'Title will appear here';
+            $('#pv-desc').textContent = 'Description preview';
+            $('#pv-hint').textContent = 'Hint will appear here';
+            // Reset eye icons
+            $('.eye-btn img').forEach(img => img.src = 'https://img.icons8.com/material-rounded/24/visible.png');
+            $('#password').type = 'password';
+            $('#confirmPassword').type = 'password';
+            $('#unlockPassword').type = 'password';
+        });
+
+        // ---------- Unlock logic ----------
+        async function initUnlock() {
+            const hash = location.hash;
+            if (!hash.startsWith('#lock=')) return false;
+
+            const b64 = hash.slice(6);
+            let payload;
+            try { payload = JSON.parse(b64_to_utf8(b64)); }
+            catch (e) { alert('Invalid or corrupted link.'); return false; }
+
+            $('#pageHeader').style.display = 'none';
+            $('#generatorCard').style.display = 'none';
+
+            const unlock = $('#unlockArea');
+            unlock.style.display = 'block';
+
+            $('#lockedTitle').textContent = payload.title || 'Unlock Your Link';
+            $('#lockedDesc').textContent = payload.desc || '';
+            $('#lockedHint').textContent = payload.hint ? 'Hint: ' + payload.hint : '';
+
+            $('#unlockPassword').focus();
+
+            async function doUnlock() {
+                const entered = $('#unlockPassword').value;
+                const computed = await sha256hex(entered + payload.salt);
+                if (computed === payload.hashed) {
+                    window.location.href = payload.dest;
+                } else {
+                    const msg = $('#unlockMsg');
+                    msg.textContent = 'Incorrect password. Try again.';
+                    msg.style.display = 'block';
+                    setTimeout(() => msg.style.display = 'none', 3000);
+                }
+            }
+
+            $('#unlockBtn').replaceWith($('#unlockBtn').cloneNode(true));
+            $('#unlockBtn').addEventListener('click', doUnlock);
+            $('#unlockPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doUnlock(); });
+
+            return true;
+        }
+
+        // ---------- Page init ----------
+        (function () {
+            if (!initUnlock()) {
+                $('#unlockArea').style.display = 'none';
+            }
+        })();
+    </script>
 </body>
+
 </html>
